@@ -1,0 +1,1523 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="深度篇：RabbitMQ的5大问题详解, 博客 Java SpingBoot Mybatis Redis RabbitMQ SpingCloud Nacos MySQL DB Linux Centos Node Npm Vue Hexo 学习 生活 工作">
+    <meta name="description" content="前言最近，消息队列（Message Queue ，简称 MQ）越来越火。很多公司在用，很多人在用，其重要性不言而喻。如果让你回答下面这些问题，你的心中是否有答案了呢？
+
+为什么要用 MQ？
+引入 MQ 会多出哪些问题？
+如何解决这些问题？
+">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="white"/>
+    <title>深度篇：RabbitMQ的5大问题详解 | YuYuYu</title>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon, image/vnd.microsoft.icon" href="/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+
+    <style type="text/css">
+        
+        code[class*="language-"], pre[class*="language-"] {
+            white-space: pre !important;
+        }
+
+        
+    </style>
+    <script src="/libs/jquery/jquery.min.js"></script>
+<meta name="generator" content="Hexo 4.1.1">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="YuYuYu" type="application/atom+xml">
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+
+<body>
+
+<header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                        <img src="/apple-touch-icon.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">YuYuYu</span>
+                </a>
+            </div>
+            
+
+
+<!-- <a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fa fa-navicon"></i></a>
+<ul class="right">
+    
+    <li class="hide-on-med-and-down">
+        <a href="/" class="waves-effect waves-light">
+            
+            <i class="fa fa-home"></i>
+            
+            <span>首页</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/tags" class="waves-effect waves-light">
+            
+            <i class="fa fa-tags"></i>
+            
+            <span>标签</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/categories" class="waves-effect waves-light">
+            
+            <i class="fa fa-bookmark"></i>
+            
+            <span>分类</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/archives" class="waves-effect waves-light">
+            
+            <i class="fa fa-archive"></i>
+            
+            <span>归档</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/about" class="waves-effect waves-light">
+            
+            <i class="fa fa-user-circle-o"></i>
+            
+            <span>关于</span>
+        </a>
+    </li>
+    
+    <li>
+        <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+            <i id="searchIcon" class="fa fa-search" title="搜索"></i>
+        </a>
+    </li>
+</ul> -->
+
+<!-- 支持二级菜单特性 -->
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fa fa-navicon"></i></a>
+<ul class="right nav-menu">
+    
+        <li class="hide-on-med-and-down nav-item">
+
+            
+                <a href="/" class="waves-effect waves-light">
+                    
+                        <i class="fa fa-home"></i>
+                    
+                    <span>首页</span>
+                </a>
+
+            
+        </li>
+    
+        <li class="hide-on-med-and-down nav-item">
+
+            
+                <a href="/tags" class="waves-effect waves-light">
+                    
+                        <i class="fa fa-tags"></i>
+                    
+                    <span>标签</span>
+                </a>
+
+            
+        </li>
+    
+        <li class="hide-on-med-and-down nav-item">
+
+            
+                <a href="/categories" class="waves-effect waves-light">
+                    
+                        <i class="fa fa-bookmark"></i>
+                    
+                    <span>分类</span>
+                </a>
+
+            
+        </li>
+    
+        <li class="hide-on-med-and-down nav-item">
+
+            
+                <a href="/archives" class="waves-effect waves-light">
+                    
+                        <i class="fa fa-archive"></i>
+                    
+                    <span>归档</span>
+                </a>
+
+            
+        </li>
+    
+        <li class="hide-on-med-and-down nav-item">
+
+            
+                <a href="/about" class="waves-effect waves-light">
+                    
+                        <i class="fa fa-user-circle-o"></i>
+                    
+                    <span>关于</span>
+                </a>
+
+            
+        </li>
+    
+    <li>
+        <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+            <i id="searchIcon" class="fa fa-search" title="搜索"></i>
+        </a>
+    </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+            <img src="/medias/avatars/avatar.jpg"
+                 class="logo-img circle responsive-img">
+        
+        <div class="logo-name">YuYuYu</div>
+        <div class="logo-desc">
+            
+                杂乱碎片记录 | 有关Java、DB、Linux、学习、生活、工作等
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+            <li class="m-nav-item">
+                
+                    <a href="/" class="waves-effect waves-light">
+                        
+                            <i class="fa fa-fw fa-home"></i>
+                        
+                        首页
+                    </a>
+                
+            </li>
+        
+            <li class="m-nav-item">
+                
+                    <a href="/tags" class="waves-effect waves-light">
+                        
+                            <i class="fa fa-fw fa-tags"></i>
+                        
+                        标签
+                    </a>
+                
+            </li>
+        
+            <li class="m-nav-item">
+                
+                    <a href="/categories" class="waves-effect waves-light">
+                        
+                            <i class="fa fa-fw fa-bookmark"></i>
+                        
+                        分类
+                    </a>
+                
+            </li>
+        
+            <li class="m-nav-item">
+                
+                    <a href="/archives" class="waves-effect waves-light">
+                        
+                            <i class="fa fa-fw fa-archive"></i>
+                        
+                        归档
+                    </a>
+                
+            </li>
+        
+            <li class="m-nav-item">
+                
+                    <a href="/about" class="waves-effect waves-light">
+                        
+                            <i class="fa fa-fw fa-user-circle-o"></i>
+                        
+                        关于
+                    </a>
+                
+            </li>
+        
+        
+    </ul>
+</div>
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    <script src="/libs/cryptojs/crypto-js.min.js"></script>
+    <script>
+        (function () {
+            let pwd = '';
+            if (pwd && pwd.length > 0) {
+                if (pwd !== CryptoJS.SHA256(prompt('请输入访问本文章的密码')).toString(CryptoJS.enc.Hex)) {
+                    alert('密码错误，将返回主页！');
+                    location.href = '/';
+                }
+            }
+        })();
+    </script>
+
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/14.jpg')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">深度篇：RabbitMQ的5大问题详解</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<main class="post-container content">
+
+    
+        <link rel="stylesheet" href="/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        width: 345px;
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        margin: 35px 0 15px 0;
+        padding-left: 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content {
+        height: calc(100vh - 250px);
+        overflow: auto;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+
+        position: absolute;
+        right: 23.5vw;
+        display: block;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #floating-toc-btn {
+        position: fixed;
+        right: 15px;
+        bottom: 76px;
+        padding-top: 15px;
+        margin-bottom: 0;
+        z-index: 998;
+    }
+
+    #floating-toc-btn .btn-floating {
+        width: 48px;
+        height: 48px;
+    }
+
+    #floating-toc-btn .btn-floating i {
+        line-height: 48px;
+        font-size: 1.4rem;
+    }
+</style>
+<div class="row">
+    <div id="main-content" class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/Java/">
+                                    <span class="chip bg-color">Java</span>
+                                </a>
+                            
+                                <a href="/tags/RabbitMQ/">
+                                    <span class="chip bg-color">RabbitMQ</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">
+                                    <span class="chip bg-color">消息队列</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%BC%82%E6%AD%A5/">
+                                    <span class="chip bg-color">异步</span>
+                                </a>
+                            
+                                <a href="/tags/%E8%A7%A3%E8%80%A6/">
+                                    <span class="chip bg-color">解耦</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%89%8A%E5%B3%B0/">
+                                    <span class="chip bg-color">削峰</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                        <div class="post-cate">
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                                <a href="/categories/RabbitMQ/" class="post-category">
+                                    RabbitMQ
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                    <div class="post-date info-break-policy">
+                        <i class="fa fa-calendar-minus-o fa-fw"></i>发布日期:&nbsp;&nbsp;
+                        2021-11-02
+                    </div>
+                
+
+                
+                    <div class="post-date info-break-policy">
+                        <i class="fa fa-calendar-check-o fa-fw"></i>更新日期:&nbsp;&nbsp;
+                        2021-11-10
+                    </div>
+                
+
+                
+                    <div class="info-break-policy">
+                        <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
+                        3.5k
+                    </div>
+                
+
+                
+                    <div class="info-break-policy">
+                        <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                        12 分
+                    </div>
+                
+
+                
+            </div>
+        </div>
+        <hr class="clearfix">
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近，消息队列（Message Queue ，简称 MQ）越来越火。很多公司在用，很多人在用，其重要性不言而喻。<br>如果让你回答下面这些问题，你的心中是否有答案了呢？</p>
+<ul>
+<li>为什么要用 MQ？</li>
+<li>引入 MQ 会多出哪些问题？</li>
+<li>如何解决这些问题？</li>
+</ul>
+<p>本文将会一一为你解答，这些看似平常却很有意义的问题。</p>
+<h3 id="1-传统模式有哪些痛点"><a href="#1-传统模式有哪些痛点" class="headerlink" title="1. 传统模式有哪些痛点"></a>1. 传统模式有哪些痛点</h3><h4 id="痛点-1"><a href="#痛点-1" class="headerlink" title="痛点 1"></a>痛点 1</h4><p>有些复杂的业务系统，一次用户请求可能会同步调用 N 个系统的接口，需要等待所有的接口都返回才能真正的获取执行结果。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/1.jpg"><br>这种同步接口调用的方式总耗时比较长，非常影响用户体验。特别是在网络不稳定的情况下，极容易出现接口超时问题。</p>
+<h4 id="痛点-2"><a href="#痛点-2" class="headerlink" title="痛点 2"></a>痛点 2</h4><p>很多复杂的业务系统，一般都会拆分成多个子系统。以用户下单为例，请求会先通过订单系统，然后分别调用支付系统、库存系统、积分系统和物流系统。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/2.jpg"><br>系统之间耦合性太高，如果调用的任何一个子系统出现异常，整个请求都会异常。对系统的稳定性非常不利。</p>
+<h4 id="痛点-3"><a href="#痛点-3" class="headerlink" title="痛点 3"></a>痛点 3</h4><p>为了吸引用户，有时候会搞一些活动，比如秒杀等。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/3.jpg"><br>如果用户少还好，不会影响系统的稳定性。但如果用户突增，一时间所有的请求都到数据库，可能会导致数据库无法承受这么大的压力，响应变慢或者直接挂掉。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/4.jpg"><br>对于这种突然出现的请求峰值，无法保证系统的稳定性。</p>
+<h3 id="2-为什么要用-MQ"><a href="#2-为什么要用-MQ" class="headerlink" title="2. 为什么要用 MQ"></a>2. 为什么要用 MQ</h3><p>对于上面传统模式的三类问题，使用 MQ 就能轻松解决。</p>
+<h4 id="2-1-异步"><a href="#2-1-异步" class="headerlink" title="2.1 异步"></a>2.1 异步</h4><p>对于痛点 1 同步接口调用导致响应时间长的问题。使用 MQ 之后，将同步调用改成异步调用，能够显著减少系统响应时间。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/5.jpg"><br>系统 A 作为消息的生产者，在完成本职工作后就能直接返回结果了。无需等待消息消费者的返回，它们最终会独立完成所有的业务功能。</p>
+<p>这样能避免总耗时比较长，从而影响用户的体验的问题。</p>
+<h4 id="2-2-解耦"><a href="#2-2-解耦" class="headerlink" title="2.2 解耦"></a>2.2 解耦</h4><p>对于痛点 2 子系统间耦合性太大的问题，使用 MQ 之后，只需要依赖于 MQ。避免了各个子系统间的强依赖问题。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/6.jpg"><br>订单系统作为消息生产者，保证它自己没有异常即可，不会受到支付系统等业务子系统的异常影响。并且各个消费者业务子系统之间，也互不影响。</p>
+<p>这样就把之前复杂的业务子系统的依赖关系，转换为只依赖于 MQ 的简单依赖，从而显著的降低了系统间的耦合度。</p>
+<h4 id="2-3-削峰"><a href="#2-3-削峰" class="headerlink" title="2.3 削峰"></a>2.3 削峰</h4><p>对于痛点 3，由于突然出现的请求峰值导致系统不稳定的问题。使用 MQ 后，能够起到削峰的作用。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/7.jpg"><br>订单系统接收到用户请求之后，将请求直接发送到 MQ；</p>
+<p>然后，订单消费者从 MQ 中消费消息，做写库操作；</p>
+<p>当出现请求峰值的情况，由于消费者的消费能力有限，会按照自己的节奏来消费消息。多余请求不处理，保留在 MQ 的队列中，不会对系统的稳定性造成影响。</p>
+<h3 id="3-引入-MQ-会多出哪些问题"><a href="#3-引入-MQ-会多出哪些问题" class="headerlink" title="3. 引入 MQ 会多出哪些问题"></a>3. 引入 MQ 会多出哪些问题</h3><p>引入 MQ 后让子系统间耦合性降低了，异步处理机制减少了系统的响应时间。同时能够有效的应对请求峰值问题，提升了系统的稳定性。<br>但是，引入 MQ 的同时也会带来一些问题。</p>
+<h4 id="3-1-重复消费问题"><a href="#3-1-重复消费问题" class="headerlink" title="3.1 重复消费问题"></a>3.1 重复消费问题</h4><p>重复消费问题可以说是 MQ 中普遍存在的问题，不管你用哪种 MQ 都无法避免。</p>
+<p>有哪些场景会出现重复的消息呢？</p>
+<p>消息生产者产生了重复的消息；<br>Kafka 和 RocketMQ 的 offset 被回调了；<br>消息消费者确认失败；<br>消息消费者确认时超时；<br>业务系统主动发起重试。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/8.jpg"><br>如果重复消息不做正确的处理，会对业务造成很大的影响，产生重复数据或者导致数据异常，比如会员系统多开通了一个月的会员等。</p>
+<h4 id="3-2-数据一致性问题"><a href="#3-2-数据一致性问题" class="headerlink" title="3.2 数据一致性问题"></a>3.2 数据一致性问题</h4><p>很多时候，如果 MQ 的消费者业务处理异常，就会出现数据一致性问题。</p>
+<p>举个例子，一个完整的业务流程是，下单成功之后送 100 个积分。下单写库成功了，但是消息消费者在送积分的时候失败了。这样就会造成数据不一致的情况，即该业务流程的部分数据写库了，另外一部分没有写库。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/9.jpg"><br>如果下单和送积分在同一个事务中，要么同时成功，要么同时失败。这样不会出现数据一致性问题的。</p>
+<p>但由于跨系统调用，为了性能考虑一般不会使用强一致性的方案，而改成达成最终一致性即可。</p>
+<h4 id="3-3-消息丢失问题"><a href="#3-3-消息丢失问题" class="headerlink" title="3.3 消息丢失问题"></a>3.3 消息丢失问题</h4><p>同样消息丢失问题，也是 MQ 中普遍存在的问题，不管你用哪种 MQ 都无法避免。</p>
+<p>有哪些场景会出现消息丢失问题呢？</p>
+<p>生产者产生消息时，由于网络原因发送到 MQ 失败了；<br>MQ 服务器持久化，存储磁盘时出现异常；<br>Kafka 和 RocketMQ 的 offset 被回调时，略过了很多消息；<br>消费者刚读取消息，已经 ACK 确认，但业务还没处理完，服务就被重启了。</p>
+<p>导致消息丢失问题的原因挺多的，生产者、MQ 服务器、消费者都有可能产生问题。我在这里就不一一列举了。</p>
+<p>最终的结果会导致消费者无法正确的处理消息，而导致数据不一致的情况。</p>
+<h4 id="3-4-消息顺序问题"><a href="#3-4-消息顺序问题" class="headerlink" title="3.4 消息顺序问题"></a>3.4 消息顺序问题</h4><p>有些业务数据是有状态的，比如订单有下单、支付、完成、退货等状态。如果订单数据作为消息体，就会涉及顺序问题了。</p>
+<p>例如消费者收到同一个订单的两条消息。第一条消息的状态是下单，第二条消息的状态是支付，这是没问题的。</p>
+<p>但如果第一条消息的状态是支付，第二条消息的状态是下单就会有问题了。没有下单就先支付了？<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/10.png"><br>消息顺序问题是一个非常棘手的问题，比如：</p>
+<p>Kafka 同一个 partition 中能保证顺序，但是不同的 partition 无法保证顺序；<br>RabbitMQ的同一个 queue 能够保证顺序，但是如果多个消费者同一个 queue 也会有顺序问题。</p>
+<p>如果消费者使用多线程消费消息，也无法保证顺序。</p>
+<p>如果消费消息时同一个订单的多条消息中，中间的一条消息出现异常情况，顺序将会被打乱。</p>
+<p>还有如果生产者发送到 MQ 中的路由规则，跟消费者不一样，也无法保证顺序。</p>
+<h4 id="3-5-消息堆积"><a href="#3-5-消息堆积" class="headerlink" title="3.5 消息堆积"></a>3.5 消息堆积</h4><p>如果消息消费者读取消息的速度，能够跟上消息生产者的节奏，那么整套 MQ 机制就能发挥最大作用。</p>
+<p>但是很多时候，由于某些批处理或者其他原因，导致消费速度小于生产速度。这样会直接导致消息堆积问题，从而影响业务功能。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/11.jpg"><br>这里以下单开通会员为例，如果消息出现堆积会导致用户下单之后，很久之后才能变成会员。这种情况肯定会引起大量用户投诉。</p>
+<h4 id="3-6-系统复杂度提升"><a href="#3-6-系统复杂度提升" class="headerlink" title="3.6 系统复杂度提升"></a>3.6 系统复杂度提升</h4><p>这里说的系统复杂度和系统耦合性是不一样的。</p>
+<p>假设以前只有系统 A、系统 B 和系统 C 三个系统，引入 MQ 之后，除了需要关注前面三个系统之外，还需要关注 MQ 服务。需要关注的点越多，系统的复杂度越高。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/12.jpg"><br>MQ 的机制需要生产者、MQ 服务器、消费者。有一定的学习成本，需要额外部署 MQ 服务器。</p>
+<p>有些 MQ 功能非常强大、用法有点复杂，例如 RocketMQ。如果使用不好，会出现很多问题。有些问题，不像接口调用那么容易排查，从而导致系统的复杂度提升了。</p>
+<h3 id="4-如何解决这些问题？"><a href="#4-如何解决这些问题？" class="headerlink" title="4. 如何解决这些问题？"></a>4. 如何解决这些问题？</h3><p>MQ 是一种趋势，总体来说对我们的系统是利大于弊的，难道因为它会出现一些问题，我们就不用它了？那么我们要如何解决这些问题呢？</p>
+<h4 id="4-1-重复消息问题"><a href="#4-1-重复消息问题" class="headerlink" title="4.1 重复消息问题"></a>4.1 重复消息问题</h4><p>不管是由于生产者产生的重复消息，还是由于消费者导致的重复消息，我们都可以在消费者中解决这个问题。</p>
+<p>这就要求消费者在做业务处理时，要做幂等设计。如果有不知道如何设计的朋友，可以参考“高并发下如何保证接口的幂等性？”，里面介绍得非常详细。</p>
+<p>在这里我推荐增加一张消费消息表，来解决 MQ 的这类问题。</p>
+<p>消费消息表中，使用 messageId 做唯一索引。在处理业务逻辑之前，先根据 messageId 查询一下该消息有没有处理过。如果已经处理过了则直接返回成功，如果没有处理过，则继续做业务处理。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/13.jpg"></p>
+<h4 id="4-2-数据一致性问题"><a href="#4-2-数据一致性问题" class="headerlink" title="4.2 数据一致性问题"></a>4.2 数据一致性问题</h4><p>我们都知道数据一致性分为：</p>
+<p>强一致性<br>弱一致性<br>最终一致性</p>
+<p>而 MQ 为了性能考虑使用的是最终一致性，那么必定会出现数据不一致的问题。这类问题大概率是因为消费者读取消息后，业务逻辑处理失败导致的。这时候可以增加重试机制。</p>
+<p>重试分为同步重试和异步重试。</p>
+<p>有些消息量比较小的业务场景，可以采用同步重试。在消费消息时如果处理失败，立刻重试 3-5 次，如果还是失败则写入到记录表中。</p>
+<p>但如果消息量比较大，则不建议使用这种方式。因为如果出现网络异常，可能会导致大量的消息不断重试，影响消息读取速度造成消息堆积。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/14.jpg"><br>消息量比较大的业务场景，建议采用异步重试。在消费者处理失败之后，立刻写入重试表，有个 job 专门定时重试。</p>
+<p>还有一种做法：如果消费失败，自己给同一个 topic 发一条消息。在后面的某个时间点，自己又会消费到那条消息，起到了重试的效果。如果对消息顺序要求不高的场景，可以使用这种方式。</p>
+<h4 id="4-3-消息丢失问题"><a href="#4-3-消息丢失问题" class="headerlink" title="4.3 消息丢失问题"></a>4.3 消息丢失问题</h4><p>不管你是否承认，有时候消息真的会丢。即使这种概率非常小，也会对业务有影响。生产者、MQ 服务器、消费者都有可能会导致消息丢失的问题。为了解决这个问题，我们可以增加一张消息发送表。</p>
+<p>当生产者发完消息之后，会往该表中写入一条数据，状态 status 标记为待确认；</p>
+<p>如果消费者读取消息之后，调用生产者的 API 更新该消息的 status 为已确认；</p>
+<p>有个 job 每隔一段时间检查一次消息发送表，如果5分钟（这个时间可以根据实际情况来定）后还有状态是待确认的消息，则认为该消息已经丢失了，重新发条消息。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/15.jpg"><br>这样不管是由于生产者、MQ 服务器、还是消费者导致的消息丢失问题，job 都会重新发消息。</p>
+<h4 id="4-4-消息顺序问题"><a href="#4-4-消息顺序问题" class="headerlink" title="4.4 消息顺序问题"></a>4.4 消息顺序问题</h4><p>消息顺序问题是一种常见问题。我们以 Kafka 消费订单消息为例，订单有下单、支付、完成、退货等状态。这些状态是有先后顺序的，如果顺序错了会导致业务异常。<br>解决这类问题之前，我们需要先确认：消费者是否真的需要知道中间状态，只知道最终状态行不行？<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/16.jpg"><br>其实很多时候，我真的需要知道的是最终状态。这时可以把流程优化一下：<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/17.jpg"><br>这种方式可以解决大部分的消息顺序问题。</p>
+<p>但如果真的有需要保证消息顺序的需求，那么可以将订单号路由到不同的 partition。同一个订单号的消息，每次到发到同一个 partition。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/18.jpg"></p>
+<h4 id="4-5-消息堆积"><a href="#4-5-消息堆积" class="headerlink" title="4.5 消息堆积"></a>4.5 消息堆积</h4><p>如果消费者消费消息的速度小于生产者生产消息的速度，将会出现消息堆积问题。其实这类问题产生的原因很多。如果想要进一步了解，可以看看“我用kafka两年踩过的一些非比寻常的坑”。</p>
+<p>那么消息堆积问题该如何解决呢？这个要看消息是否需要保证顺序。</p>
+<p>如果不需要保证顺序，可以读取消息之后用多线程处理业务逻辑。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/19.jpg"></p>
+<p>这样就能增加业务逻辑处理速度，解决消息堆积问题。但是线程池的核心线程数和最大线程数需要合理配置，不然可能会浪费系统资源。</p>
+<p>如果需要保证顺序，可以读取消息之后将消息按照一定的规则分发到多个队列中，然后在队列中用单线程处理。<br><img src="https://myblog-1251991014.cos.ap-beijing.myqcloud.com/20.jpg"></p>
+<blockquote>
+<p>转载自：<a href="https://mp.weixin.qq.com/s/QGvzJCHFrnJU9Cf2eZZdxQ">https://mp.weixin.qq.com/s/QGvzJCHFrnJU9Cf2eZZdxQ</a></p>
+</blockquote>
+
+            </div>
+            <hr/>
+
+            
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/Java/">
+                                    <span class="chip bg-color">Java</span>
+                                </a>
+                            
+                                <a href="/tags/RabbitMQ/">
+                                    <span class="chip bg-color">RabbitMQ</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">
+                                    <span class="chip bg-color">消息队列</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%BC%82%E6%AD%A5/">
+                                    <span class="chip bg-color">异步</span>
+                                </a>
+                            
+                                <a href="/tags/%E8%A7%A3%E8%80%A6/">
+                                    <span class="chip bg-color">解耦</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%89%8A%E5%B3%B0/">
+                                    <span class="chip bg-color">削峰</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share"
+                     style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+<div id="article-share">
+    
+        <div class="social-share" data-sites="wechat, qq, weibo, douban"
+             data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+        <script src="/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform: scale(1.3);
+        -webkit-transform: scale(1.3);
+        -o-transform: scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fa fa-times"></i></a>
+            <h4 class="reward-title">你的赏识是我前进的动力!</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="/medias/reward/alipay.jpg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="/medias/reward/wechat.jpg" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+        <style>
+    .valine-card {
+        margin: 1.5rem auto;
+    }
+
+    .valine-card .card-content {
+        padding: 20px 20px 5px 20px;
+    }
+
+    #vcomments textarea {
+        box-sizing: border-box;
+        background: url("/medias/comment_bg.png") 100% 100% no-repeat;
+    }
+
+    #vcomments p {
+        margin: 2px 2px 10px;
+        font-size: 1.05rem;
+        line-height: 1.78rem;
+    }
+
+    #vcomments blockquote p {
+        text-indent: 0.2rem;
+    }
+
+    #vcomments a {
+        padding: 0 2px;
+        color: #4cbf30;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    #vcomments img {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+    }
+
+    #vcomments ol li {
+        list-style-type: decimal;
+    }
+
+    #vcomments ol,
+    ul {
+        display: block;
+        padding-left: 2em;
+        word-spacing: 0.05rem;
+    }
+
+    #vcomments ul li,
+    ol li {
+        display: list-item;
+        line-height: 1.8rem;
+        font-size: 1rem;
+    }
+
+    #vcomments ul li {
+        list-style-type: disc;
+    }
+
+    #vcomments ul ul li {
+        list-style-type: circle;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    #vcomments table, th, td {
+        border: 0;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments h1 {
+        font-size: 1.85rem;
+        font-weight: bold;
+        line-height: 2.2rem;
+    }
+
+    #vcomments h2 {
+        font-size: 1.65rem;
+        font-weight: bold;
+        line-height: 1.9rem;
+    }
+
+    #vcomments h3 {
+        font-size: 1.45rem;
+        font-weight: bold;
+        line-height: 1.7rem;
+    }
+
+    #vcomments h4 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    #vcomments h5 {
+        font-size: 1.1rem;
+        font-weight: bold;
+        line-height: 1.4rem;
+    }
+
+    #vcomments h6 {
+        font-size: 1rem;
+        line-height: 1.3rem;
+    }
+
+    #vcomments p {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    #vcomments hr {
+        margin: 12px 0;
+        border: 0;
+        border-top: 1px solid #ccc;
+    }
+
+    #vcomments blockquote {
+        margin: 15px 0;
+        border-left: 5px solid #42b983;
+        padding: 1rem 0.8rem 0.3rem 0.8rem;
+        color: #666;
+        background-color: rgba(66, 185, 131, .1);
+    }
+
+    #vcomments pre {
+        font-family: monospace, monospace;
+        padding: 1.2em;
+        margin: .5em 0;
+        background: #272822;
+        overflow: auto;
+        border-radius: 0.3em;
+        tab-size: 4;
+    }
+
+    #vcomments code {
+        font-family: monospace, monospace;
+        padding: 1px 3px;
+        font-size: 0.92rem;
+        color: #e96900;
+        background-color: #f8f8f8;
+        border-radius: 2px;
+    }
+
+    #vcomments pre code {
+        font-family: monospace, monospace;
+        padding: 0;
+        color: #e8eaf6;
+        background-color: #272822;
+    }
+
+    #vcomments pre[class*="language-"] {
+        padding: 1.2em;
+        margin: .5em 0;
+    }
+
+    #vcomments code[class*="language-"],
+    pre[class*="language-"] {
+        color: #e8eaf6;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+
+    #vcomments b,
+    strong {
+        font-weight: bold;
+    }
+
+    #vcomments dfn {
+        font-style: italic;
+    }
+
+    #vcomments small {
+        font-size: 85%;
+    }
+
+    #vcomments cite {
+        font-style: normal;
+    }
+
+    #vcomments mark {
+        background-color: #fcf8e3;
+        padding: .2em;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+
+    /* 修复评论第一行位置错位 */
+    .v .vlist .vcard {
+        padding-top: 2.5em !important;
+    }
+</style>
+
+<div class="card valine-card" data-aos="fade-up">
+    <div class="comment_headling"
+         style="font-size: 20px; font-weight: 700; position: relative; left: 20px; top: 15px; padding-bottom: 5px;">
+        <i class="fa fa-comments fa-fw" aria-hidden="true"></i>
+        <span>评论</span>
+    </div>
+    <div id="vcomments" class="card-content" style="display: grid"></div>
+</div>
+
+<script src="/libs/valine/av-min.js"></script>
+<script src="/libs/valine/Valine.min.js"></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        appId: 'OQUxUvnachzk6FA2NV5jBSA8-gzGzoHsz',
+        appKey: '6N6kkFYMuPlTfVJeYWvy4F1F',
+        notify: 'true' === 'true',
+        verify: 'true' === 'true',
+        visitor: 'true' === 'true',
+        avatar: 'mm',
+        pageSize: '10',
+        lang: 'zh-cn',
+        placeholder: 'just go go'
+    });
+</script>
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+            <div class="article col s12 m6" data-aos="fade-up">
+                <div class="article-badge left-badge text-color">
+                    <i class="fa fa-chevron-left"></i>&nbsp;上一篇</div>
+                <div class="card">
+                    <a href="/posts/10373.html">
+                        <div class="card-image">
+                            
+                                
+                                <img src="/medias/featureimages/0.jpg" class="responsive-img" alt="Oauth2.0实现单点登录的原理流程">
+                            
+                            <span class="card-title">Oauth2.0实现单点登录的原理流程</span>
+                        </div>
+                    </a>
+                    <div class="card-content article-content">
+                        <div class="summary block-with-text">
+                            
+                                前言单点登录是多域名企业站点流行的登录方式。本文以现实生活场景辅助理解，力争彻底理清 OAuth2.0 实现单点登录的原理流程。同时总结了权限控制的实现方案，及其在微服务架构中的应用。
+1. 什么是单点登录1.1 多点登录传统的多点登录系统
+                            
+                        </div>
+                        <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="fa fa-clock-o fa-fw icon-date"></i>2021-11-02
+                        </span>
+                            <span class="publish-author">
+                                
+                                    <i class="fa fa-bookmark fa-fw icon-category"></i>
+                                    
+                                        <a href="/categories/Oauth2/" class="post-category">
+                                    Oauth2
+                                </a>
+                                    
+                                
+                            </span>
+                        </div>
+                    </div>
+                    
+                        <div class="card-action article-tags">
+                            
+                                <a href="/tags/Java/">
+                                    <span class="chip bg-color">Java</span>
+                                </a>
+                            
+                                <a href="/tags/Oauth2/">
+                                    <span class="chip bg-color">Oauth2</span>
+                                </a>
+                            
+                                <a href="/tags/SpringBoot/">
+                                    <span class="chip bg-color">SpringBoot</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%8D%95%E7%82%B9%E7%99%BB%E5%BD%95/">
+                                    <span class="chip bg-color">单点登录</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%8E%88%E6%9D%83%E8%AE%A4%E8%AF%81/">
+                                    <span class="chip bg-color">授权认证</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+            </div>
+        
+        
+            <div class="article col s12 m6" data-aos="fade-up">
+                <div class="article-badge right-badge text-color">
+                    本篇&nbsp;<i class="fa fa-dot-circle-o"></i>
+                </div>
+                <div class="card">
+                    <a href="/posts/20169.html">
+                        <div class="card-image">
+                            
+                                
+                                <img src="/medias/featureimages/14.jpg" class="responsive-img" alt="深度篇：RabbitMQ的5大问题详解">
+                            
+                            <span class="card-title">深度篇：RabbitMQ的5大问题详解</span>
+                        </div>
+                    </a>
+                    <div class="card-content article-content">
+                        <div class="summary block-with-text">
+                            
+                                前言最近，消息队列（Message Queue ，简称 MQ）越来越火。很多公司在用，很多人在用，其重要性不言而喻。如果让你回答下面这些问题，你的心中是否有答案了呢？
+
+为什么要用 MQ？
+引入 MQ 会多出哪些问题？
+如何解决这些问题？
+
+                            
+                        </div>
+                        <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="fa fa-clock-o fa-fw icon-date"></i>2021-11-02
+                            </span>
+                            <span class="publish-author">
+                                
+                                    <i class="fa fa-bookmark fa-fw icon-category"></i>
+                                    
+                                        <a href="/categories/RabbitMQ/" class="post-category">
+                                    RabbitMQ
+                                </a>
+                                    
+                                
+                            </span>
+                        </div>
+                    </div>
+
+                    
+                        <div class="card-action article-tags">
+                            
+                                <a href="/tags/Java/">
+                                    <span class="chip bg-color">Java</span>
+                                </a>
+                            
+                                <a href="/tags/RabbitMQ/">
+                                    <span class="chip bg-color">RabbitMQ</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">
+                                    <span class="chip bg-color">消息队列</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%BC%82%E6%AD%A5/">
+                                    <span class="chip bg-color">异步</span>
+                                </a>
+                            
+                                <a href="/tags/%E8%A7%A3%E8%80%A6/">
+                                    <span class="chip bg-color">解耦</span>
+                                </a>
+                            
+                                <a href="/tags/%E5%89%8A%E5%B3%B0/">
+                                    <span class="chip bg-color">削峰</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+</article>
+</div>
+
+
+    <script>
+        $('#articleContent').on('copy', function (e) {
+            // IE8 or earlier browser is 'undefined'
+            if (typeof window.getSelection === 'undefined') return;
+
+            var selection = window.getSelection();
+            // if the selection is short let's not annoy our users.
+            if (('' + selection).length < Number.parseInt('120')) {
+                return;
+            }
+
+            // create a div outside of the visible area and fill it with the selected text.
+            var bodyElement = document.getElementsByTagName('body')[0];
+            var newdiv = document.createElement('div');
+            newdiv.style.position = 'absolute';
+            newdiv.style.left = '-99999px';
+            bodyElement.appendChild(newdiv);
+            newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+            // we need a <pre> tag workaround.
+            // otherwise the text inside "pre" loses all the line breaks!
+            if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE') {
+                newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+            }
+
+            var url = document.location.href;
+            newdiv.innerHTML += '<br />'
+                + '来源: YuYuYu<br />'
+                + '文章作者: YuYuYu<br />'
+                + '文章链接: <a href="' + url + '">' + url + '</a><br />'
+                + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+            selection.selectAllChildren(newdiv);
+            window.setTimeout(function () {
+                bodyElement.removeChild(newdiv);
+            }, 200);
+        });
+    </script>
+
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+    <script type="text/javascript" src="/libs/codeBlock/codeLang.js"></script>
+
+
+<!-- 代码块复制 -->
+
+    <script type="text/javascript" src="/libs/codeBlock/codeCopy.js"></script>
+
+
+<!-- 代码块收缩 -->
+
+
+<!-- 代码块折行 -->
+
+    <style type="text/css">
+        code[class*="language-"], pre[class*="language-"] {
+            white-space: pre !important;
+        }
+    </style>
+
+    </div>
+    <div id="toc-aside" class="expanded col l3 hide-on-med-and-down">
+        <div class="toc-widget">
+            <div class="toc-title"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOC 悬浮按钮. -->
+
+    <div id="floating-toc-btn" class="hide-on-med-and-down">
+        <a class="btn-floating btn-large bg-color">
+            <i class="fa fa-list"></i>
+        </a>
+    </div>
+
+
+<script src="/libs/tocbot/tocbot.min.js"></script>
+<script>
+    $(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            // headingsOffset: -205,
+            headingSelector: 'h2, h3, h4, h5'
+        });
+
+        // modify the toc link href to support Chinese.
+        let i = 0;
+        let tocHeading = 'toc-heading-';
+        $('#toc-content a').each(function () {
+            $(this).attr('href', '#' + tocHeading + (++i));
+        });
+
+        // modify the heading title id to support Chinese.
+        i = 0;
+        $('#articleContent').children('h2, h3, h4, h5').each(function () {
+            $(this).attr('id', tocHeading + (++i));
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+
+        
+        /* 修复文章卡片 div 的宽度. */
+        let fixPostCardWidth = function (srcId, targetId) {
+            let srcDiv = $('#' + srcId);
+            if (srcDiv.length === 0) {
+                return;
+            }
+
+            let w = srcDiv.width();
+            if (w >= 450) {
+                w = w + 21;
+            } else if (w >= 350 && w < 450) {
+                w = w + 18;
+            } else if (w >= 300 && w < 350) {
+                w = w + 16;
+            } else {
+                w = w + 14;
+            }
+            $('#' + targetId).width(w);
+        };
+
+        // 切换 TOC 目录展开收缩的相关操作.
+        const expandedClass = 'expanded';
+        let $tocAside = $('#toc-aside');
+        let $mainContent = $('#main-content');
+        $('#floating-toc-btn .btn-floating').click(function () {
+            if ($tocAside.hasClass(expandedClass)) {
+                $tocAside.removeClass(expandedClass).hide();
+                $mainContent.removeClass('l9');
+            } else {
+                $tocAside.addClass(expandedClass).show();
+                $mainContent.addClass('l9');
+            }
+            fixPostCardWidth('artDetail', 'prenext-posts');
+        });
+        
+    });
+</script>
+    
+
+</main>
+
+
+<footer class="page-footer bg-color">
+    <div class="container row center-align">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            <span id="year">2021</span>
+            <a href="/about" rel="external nofollow noreferrer">YuYuYu</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            <span id="sitetime">载入运行时间...</span>
+            
+            
+            
+            
+            <br>
+            
+            
+                
+                    &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;<span
+                            class="white-color">12.8k</span>&nbsp;字
+                
+                
+                    <span id="icp"><img src="/medias/icp.png" style="vertical-align: text-bottom;" alt="icp"/>
+                <a href="http://beian.miit.gov.cn/" target="_blank">豫ICP备2023002253号-1</a>
+            </span>
+                
+                <script>
+                    function siteTime() {
+                        var seconds = 1000;
+                        var minutes = seconds * 60;
+                        var hours = minutes * 60;
+                        var days = hours * 24;
+                        var years = days * 365;
+                        var today = new Date();
+                        var startYear = "2021";
+                        var startMonth = "11";
+                        var startDate = "1";
+                        var startHour = "0";
+                        var startMinute = "0";
+                        var startSecond = "0";
+                        var todayYear = today.getFullYear();
+                        var todayMonth = today.getMonth() + 1;
+                        var todayDate = today.getDate();
+                        var todayHour = today.getHours();
+                        var todayMinute = today.getMinutes();
+                        var todaySecond = today.getSeconds();
+                        var t1 = Date.UTC(startYear, startMonth, startDate, startHour, startMinute, startSecond);
+                        var t2 = Date.UTC(todayYear, todayMonth, todayDate, todayHour, todayMinute, todaySecond);
+                        var diff = t2 - t1;
+                        var diffYears = Math.floor(diff / years);
+                        var diffDays = Math.floor((diff / days) - diffYears * 365);
+                        var diffHours = Math.floor((diff - (diffYears * 365 + diffDays) * days) / hours);
+                        var diffMinutes = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours) /
+                            minutes);
+                        var diffSeconds = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours -
+                            diffMinutes * minutes) / seconds);
+                        if (startYear == todayYear) {
+                            document.getElementById("year").innerHTML = todayYear;
+                            document.getElementById("sitetime").innerHTML = "本站已安全运行 " + diffDays + " 天 " + diffHours +
+                                " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+                        } else {
+                            document.getElementById("year").innerHTML = startYear + " - " + todayYear;
+                            document.getElementById("sitetime").innerHTML = "本站已安全运行 " + diffYears + " 年 " + diffDays +
+                                " 天 " + diffHours + " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+                        }
+                    }
+
+                    setInterval(siteTime, 1000);
+                </script>
+            
+
+        </div>
+        <div class="col s12 m4 l4 social-link ">
+
+    <a href="/wechat.jpg"
+       target="_blank" data-tooltip="添加我的微信: [object Object]" data-position="top"
+       data-delay="50">
+        <i class="fa fa-weixin"></i>
+    </a>
+
+
+
+    <a href="http://wpa.qq.com/msgrd?v=3&uin=554379512&site=qq&menu=yes" class="tooltipped"
+       target="_blank" data-tooltip="添加我的 QQ" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+
+    <a href="https://mail.qq.com/cgi-bin/qm_share?t=qm_mailme&email=554379512@qq.com" class="tooltipped"
+       target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+
+<!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fa fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+    $(function () {
+        searchFunc("/search.xml", 'searchInput', 'searchResult');
+    });
+</script>
+<!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fa fa-angle-up"></i>
+    </a>
+</div>
+
+
+<script src="/libs/materialize/materialize.min.js"></script>
+<script src="/libs/masonry/masonry.pkgd.min.js"></script>
+<script src="/libs/aos/aos.js"></script>
+<script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+<script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+<script src="/js/matery.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+<!-- Baidu Analytics -->
+
+
+<!-- Baidu Push -->
+
+
+
+
+
+<script type="text/javascript">
+    var OriginTitile = document.title,
+        st;
+    document.addEventListener("visibilitychange", function () {
+        document.hidden ? (document.title = "(oﾟvﾟ)ノ Hi", clearTimeout(st)) : (document.title =
+            "(*´∇｀*) 欢迎回来！", st = setTimeout(function () {
+            document.title = OriginTitile
+        }, 3e3))
+    })
+</script>
+
+<!-- 在线聊天工具  -->
+
+
+
+<!-- 背景 canvas-nest -->
+
+
+
+    <script src="/libs/instantpage/instantpage.js" type="module"></script>
+
+
+</body>
+</html>
